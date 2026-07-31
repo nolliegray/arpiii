@@ -1,2 +1,3 @@
 # arpeggiii
-Arpeggiator and Sequencer for Monome Grid iii
+An arpeggiator and sequencer for Monome Grid using iii
+
