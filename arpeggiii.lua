@@ -457,7 +457,7 @@ function event_grid(x, y, z)
         if #taps > 1 then local d = (sys_time - taps[1]) / (#taps - 1); if d > 0 then bpm = math.floor(clamp(60/d, 20, 300)); update_tempo() end end
         if #taps > 4 then table.remove(taps, 1) end
       elseif x == 3 or x == 4 then clock_source = (x==3) and 1 or 2; update_tempo() end
-    elseif x == 16 and clock_source == 1 then
+    elseif x == 13 and clock_source == 1 then
       if y==4 then bpm=clamp(bpm+1,20,300) elseif y==5 then bpm=clamp(bpm-1,20,300) elseif y==7 then bpm=clamp(bpm+10,20,300) elseif y==8 then bpm=clamp(bpm-10,20,300) end
       update_tempo()
     end
@@ -465,7 +465,7 @@ function event_grid(x, y, z)
   elseif active_page == 2 and z == 1 and y == 2 then
     if x>=1 and x<=6 then active_div_idx = x; update_tempo() elseif x>=8 and x<=10 then modifier_mode = x-7; update_tempo() end
     redraw(); return
-  elseif active_page == 3 and z == 1 and x == 16 then
+  elseif active_page == 3 and z == 1 and x == 13 then
     if y==4 then swing_val=clamp(swing_val+1,25,75) elseif y==5 then swing_val=clamp(swing_val-1,25,75) elseif y==7 then swing_val=clamp(swing_val+5,25,75) elseif y==8 then swing_val=clamp(swing_val-5,25,75) end
     update_tempo(); redraw(); return
   elseif active_page == 4 then
@@ -482,9 +482,11 @@ function event_grid(x, y, z)
     end
   elseif active_page == 5 and z == 1 then
     if y == 2 then if x==1 then midi_focus=1 elseif x==2 then midi_focus=2 end
-    elseif x == 16 then
+    elseif x == 13 then
       if y == 4 then if midi_focus==1 then midi_in_channel=clamp(midi_in_channel+1,-1,16) else midi_out_channel=clamp(midi_out_channel+1,-1,16) end
-      elseif y == 5 then if midi_focus==1 then midi_in_channel=clamp(midi_in_channel-1,-1,16) else midi_out_channel=clamp(midi_out_channel-1,-1,16) end end
+      elseif y == 5 then if midi_focus==1 then midi_in_channel=clamp(midi_in_channel-1,-1,16) else midi_out_channel=clamp(midi_out_channel-1,-1,16) end
+      elseif y == 7 then if midi_focus==1 then midi_in_channel=clamp(midi_in_channel+5,-1,16) else midi_out_channel=clamp(midi_out_channel+5,-1,16) end
+      elseif y == 8 then if midi_focus==1 then midi_in_channel=clamp(midi_in_channel-5,-1,16) else midi_out_channel=clamp(midi_out_channel-5,-1,16) end end
     end
     redraw(); return
   elseif active_page == 6 and z == 1 and y == 2 then
@@ -545,13 +547,13 @@ local function hardware_redraw()
   
   if active_page == 1 then
     grid_led(1, 2, blink_state and 15 or 4); grid_led(3, 2, clock_source == 1 and 15 or 4); grid_led(4, 2, clock_source == 2 and 15 or 4) 
-    if clock_source == 1 then grid_led(16, 4, 12); grid_led(16, 5, 6); grid_led(16, 7, 12); grid_led(16, 8, 6) end
+    if clock_source == 1 then grid_led(13, 4, 12); grid_led(13, 5, 6); grid_led(13, 7, 12); grid_led(13, 8, 6) end
     draw_text((clock_source == 2) and "EXT" or bpm_strs[math.floor(bpm + 0.5)], 1, 4)
   elseif active_page == 2 then
     for i=1,6 do grid_led(i, 2, active_div_idx == i and 15 or 4) end; for i=1,3 do grid_led(i+7, 2, modifier_mode == i and 15 or 4) end
     draw_text(div_strs[active_div_idx][modifier_mode], 1, 4)
   elseif active_page == 3 then
-    grid_led(16, 4, 12); grid_led(16, 5, 6); grid_led(16, 7, 12); grid_led(16, 8, 6)
+    grid_led(13, 4, 12); grid_led(13, 5, 6); grid_led(13, 7, 12); grid_led(13, 8, 6)
     draw_text(swing_strs[swing_val], 1, 4)
   elseif active_page == 4 then
     for i=1,64 do
@@ -563,7 +565,9 @@ local function hardware_redraw()
     local sx, sg = math.ceil(gate_vel[edit_step]/8), math.ceil((gate_gate[edit_step]/100)*16)
     for i=1,16 do grid_led(i, 7, i<=sx and (i==sx and 15 or 6) or 2); grid_led(i, 8, i<=sg and (i==sg and 15 or 6) or 2) end
   elseif active_page == 5 then
-    grid_led(1, 2, midi_focus == 1 and 15 or 4); grid_led(2, 2, midi_focus == 2 and 15 or 4); grid_led(16, 4, 12); grid_led(16, 5, 6)
+    grid_led(1, 2, midi_focus == 1 and 15 or 4); grid_led(2, 2, midi_focus == 2 and 15 or 4) 
+    grid_led(13, 4, 12); grid_led(13, 5, 6)
+    grid_led(13, 7, 12); grid_led(13, 8, 6)
     draw_text(ch_strs[(midi_focus == 1) and midi_in_channel or midi_out_channel], 1, 4)
   elseif active_page == 6 then
     for i = 1, #play_orders do grid_led(i, 2, current_order == i and 15 or 4) end
