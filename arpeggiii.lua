@@ -9,7 +9,7 @@ local step, act_note, act_note_ch, last_note, last_gate = 1, nil, 1, nil, 0
 local latch, oct_shift, oct_dn_h, oct_up_h = 0, 0, false, false
 local midi_out, midi_in, midi_focus = 1, 0, 2
 local act_octs, act_octs_ord = {[-2]=false, [-1]=false, [0]=true, [1]=false, [2]=false}, {0}
-local playing, act_pg = true, 0
+local playing, act_pg = false, 0
 local bpm, clk_src, div_idx, mod_mode, swing = 120, 1, 5, 1, 50
 local arp_speed, sys_t, ext_tick, taps = (60/bpm)/2, 0, 0, {}
 local play_ords = {"ORDR", "LINE", "LEAP", "STAG", "SHFT", "SPRL", "ANCH", "ACCM", "WALK", "RAND"}
@@ -215,8 +215,11 @@ local function arp_tick()
     hist_buf[buf_idx].n = p_note; hist_buf[buf_idx].v = p_vel
     hist_buf[buf_idx].g = p_gate; hist_buf[buf_idx].c = p_ch
   else
-    if buf_start <= buf_end then if buf_idx > buf_end or buf_idx < buf_start then buf_idx = buf_start end
-    else if buf_idx > buf_end and buf_idx < buf_start then buf_start = buf_start end end
+    if buf_start <= buf_end then 
+      if buf_idx > buf_end or buf_idx < buf_start then buf_idx = buf_start end
+    else 
+      if buf_idx > buf_end and buf_idx < buf_start then buf_idx = buf_start end 
+    end
     local rec = hist_buf[buf_idx]
     p_note, p_vel, p_gate, p_ch = rec.n, rec.v, rec.g, rec.c
   end
@@ -265,7 +268,8 @@ local function reset_defaults()
   cur_ord, mod_1, mod_2 = 1, false, false
   gate_len, glb_vel, glb_gate = 16, 96, 50
   for i=1,64 do gate_seq[i], gate_vel[i], gate_gate[i] = true, glb_vel, glb_gate end
-  act_octs, act_octs_ord = {[-2]=false, [-1]=false, [0]=true, [1]=false, [2]=false}, {0}
+  act_octs = {[-2]=false, [-1]=false, [0]=true, [1]=false, [2]=false}
+  act_octs_ord = {0}
   log_keys, phys_keys, press_ord, arp_notes = {}, {}, {}, {}
   step, gate_pos, buf_idx, buf_lock = 1, 0, 0, false
   hist_buf, buf_held = {}, {}
@@ -279,7 +283,8 @@ local function soft_reset()
   kill_act(); clear_log_keys()
   gate_len = 16
   for i=1,64 do gate_seq[i], gate_vel[i], gate_gate[i] = true, glb_vel, glb_gate end
-  act_octs, act_octs_ord = {[-2]=false, [-1]=false, [0]=true, [1]=false, [2]=false}, {0}
+  act_octs = {[-2]=false, [-1]=false, [0]=true, [1]=false, [2]=false}
+  act_octs_ord = {0}
   log_keys, phys_keys, press_ord, arp_notes = {}, {}, {}, {}
   latch, oct_shift, last_gate = 0, 0, 0
   step, gate_pos = (cur_ord == 9) and find_root_step() or 1, 0
@@ -297,15 +302,15 @@ local function save_pr(n)
   for i=1,#act_octs_ord do p.aoo[i] = act_octs_ord[i] end
   for i=1,#press_ord do p.po[i] = press_ord[i] end
   
-  presets[n] = p
   pset_write(n, p)
+  presets[n] = true
   pset_write(100, {cur_pr = n})
   cur_pr = n
   collectgarbage("collect")
 end
 
 local function load_pr(n)
-  local p = presets[n]
+  local p = pset_read(n)
   if not p then 
     reset_defaults(); cur_pr = n; return 
   end
@@ -318,17 +323,21 @@ local function load_pr(n)
     gate_gate[i] = p.gg[i] or glb_gate
   end
   
-  act_octs, act_octs_ord, press_ord, log_keys = {}, {}, {}, {}
+  act_octs = {[-2]=false, [-1]=false, [0]=false, [1]=false, [2]=false}
+  act_octs_ord, press_ord, log_keys = {}, {}, {}
   for i=-2,2 do act_octs[i] = p.ao[i] end
   for i=1,#p.aoo do act_octs_ord[i] = p.aoo[i] end
   if p.po then for i=1,#p.po do press_ord[i] = p.po[i]; log_keys[p.po[i]] = true end end
   
   last_gate = 0
   cur_pr = n; upd_tempo(); rebuild_arp(); redraw()
+  collectgarbage("collect")
 end
 
 local sys_m = metro.init(function() 
   sys_t = sys_t + 0.1 
+  collectgarbage("step", 100)
+  
   if act_pg == 0 then
     for idx, t in pairs(gate_held) do if t and (sys_t - t) >= 1.0 then gate_len, gate_held[idx] = idx, nil; redraw() end end
   end
@@ -429,8 +438,13 @@ function event_grid(x, y, z)
         if x == 2 then gate_pos, buf_idx = 0, 0; step = (cur_ord == 9) and find_root_step() or 1; redraw()
         elseif p_m[x] then chg_pg(act_pg == p_m[x] and 0 or p_m[x])
         elseif x == 16 then 
-          if buf_lock and act_pg ~= 0 then chg_pg(0)
-          else buf_lock = not buf_lock; if not buf_lock then buf_start, buf_end, buf_held = 1, 64, {} else chg_pg(0) end end
+          if buf_lock and act_pg ~= 0 then 
+             chg_pg(0)
+          else 
+             buf_lock = not buf_lock
+             buf_held = {}
+             if not buf_lock then buf_start, buf_end = 1, 64 else chg_pg(0) end 
+          end
           redraw()
         end
       end
@@ -489,9 +503,18 @@ function event_grid(x, y, z)
     local idx = x + ((y-2)*16)
     if buf_lock then
       if z == 1 then
-        ins(buf_held, idx)
-        if #buf_held==1 then buf_start,buf_end=idx,idx elseif #buf_held>=2 then buf_start,buf_end = buf_held[1],buf_held[2] end
-      else for k,v in ipairs(buf_held) do if v==idx then rem(buf_held,k); break end end end
+        local dup = false
+        for _, v in ipairs(buf_held) do if v == idx then dup = true break end end
+        if not dup then ins(buf_held, idx) end
+        
+        if #buf_held == 1 then 
+            buf_start, buf_end = buf_held[1], buf_held[1] 
+        elseif #buf_held >= 2 then 
+            buf_start, buf_end = buf_held[1], buf_held[#buf_held] 
+        end
+      else
+        for k,v in ipairs(buf_held) do if v==idx then rem(buf_held,k); break end end
+      end
     else
       if z == 1 then gate_held[idx] = sys_t
       elseif gate_held[idx] then if (sys_t-gate_held[idx])<1.0 then gate_seq[idx] = not gate_seq[idx] end; gate_held[idx] = nil end
@@ -600,7 +623,7 @@ local function hw_redraw()
   grid_refresh()
 end
 
-for i=1, 24 do local d = pset_read(i); if d then presets[i] = d end end
+for i=1, 24 do local d = pset_read(i); if d then presets[i] = true end end
 local gst = pset_read(100)
 if gst and gst.cur_pr then load_pr(gst.cur_pr) end
 
