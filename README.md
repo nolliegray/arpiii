@@ -1,7 +1,7 @@
 # arpiii
 An arpeggiator and sequencer for Monome Grid using iii
 
-Current Version 1.0
+Current Version 1.0.0
 
 --add thumbnail link to video--
 
