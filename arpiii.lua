@@ -1,4 +1,4 @@
--- arpiii v1.0.0
+-- arpiii v1.1.0
 pset_init("arpiii")
 
 local ins, rem, sort = table.insert, table.remove, table.sort
@@ -51,7 +51,6 @@ local key_map = {[8]={[3]=1,[4]=2,[5]=3,[6]=4,[7]=5,[8]=6,[9]=7,[10]=8,[11]=9,[1
 local note_map = {[8]={[3]=48,[4]=50,[5]=52,[6]=53,[7]=55,[8]=57,[9]=59,[10]=60,[11]=62,[12]=64,[13]=65,[14]=67,[15]=69,[16]=71}, [7]={[4]=49,[5]=51,[7]=54,[8]=56,[9]=58,[11]=61,[12]=63,[14]=66,[15]=68,[16]=70}}
 local note_xy = {}; for y, r in pairs(note_map) do for x, n in pairs(r) do note_xy[n] = {x=x, y=y} end end
 
-local function clamp(v, lo, hi) return max(lo, min(hi, v)) end
 local function norm_n(n) while n>127 do n=n-120 end; while n<0 do n=n+120 end; return n end
 local grid_dirty = true
 function redraw() grid_dirty = true end
