@@ -76,26 +76,26 @@ This button sets the clock to look for an external MIDI signal. It responds to s
 If the clock is set back to internal after using an external, the internal clock will reflect the previously used external clock (approximate).
 ![Clock External](img/arpiii_Clock-External.png)
 
-## Time Division
-**[M] Time Division**  
-This button shows the page for setting the time division the arpeggiator runs at relative to the main tempo. The current setting shown on the display text.
-
-**[N] Division Options**  
-The buttons allow for the time to be divided in musical division from 1 to 1/64 of a note.
-
-**[O] Division Modifiers**  
-The modifier buttons allow the division to be switched between straight time, triplets, and dotted notes.
-![Time Division](img/arpiii_Time-Division.png)
-
 ## Swing
-**[P] Swing**  
+**[M] Swing**  
 This button toggles the Swing page and shows the current global swing value in the text display.
 
-**[Q] Increments**  
+**[N] Increments**  
 The two sets of buttons next to the number display are for increasing or decreasing the swing.
 
 Swing can be adjusted from 25% to 75% with 50% being no swing. Swing set under 50% will cause the swung notes to arrive early and swing set over 50% will cause the swung notes to arrive late.
 ![Swing](img/arpiii_Swing.png)
+
+## Time Division
+**[O] Time Division**  
+This button shows the page for setting the time division the arpeggiator runs at relative to the main tempo. The current setting shown on the display text.
+
+**[P] Division Options**  
+The buttons allow for the time to be divided in musical division from 1 to 1/64 of a note.
+
+**[Q] Division Modifiers**  
+The modifier buttons allow the division to be switched between straight time, triplets, and dotted notes.
+![Time Division](img/arpiii_Time-Division.png)
 
 ## Order - Options
 **[R] Order**  
