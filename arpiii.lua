@@ -1,4 +1,4 @@
--- arpiii v1.1.0
+-- arpiii v1.2.0
 pset_init("arpiii")
 
 local ins, rem, sort = table.insert, table.remove, table.sort
@@ -19,7 +19,7 @@ local play_dir, rand_oct_idx, rand_cycle = 1, 1, 1
 local pr_mode, presets, cur_pr = false, {}, nil
 local p_h_n, p_h_t, p_svd, p_bl_n, p_bl_t = nil, 0, false, nil, 0
 local play_h, play_h_t, play_svd, play_blink_t = false, 0, false, 0
-local p_btns = {{3,1}, {4,2}, {5,3}, {15,5}, {7,6}}
+local p_btns = {{3,1}, {5,2}, {4,3}, {15,5}, {7,6}}
 
 local gate_seq, gate_vel, gate_gate, gate_held = {}, {}, {}, {}
 local glb_vel, glb_gate, gate_len, gate_pos = 96, 50, 16, 0
@@ -428,7 +428,7 @@ function event_grid(x, y, z)
       redraw()
       return
     else
-      local p_m = {[3]=1, [4]=2, [5]=3, [15]=5, [7]=6}
+      local p_m = {[3]=1, [5]=2, [4]=3, [15]=5, [7]=6}
       if x == 1 then
         play_h = (z == 1)
         if z == 1 then 
