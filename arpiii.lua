@@ -1,4 +1,4 @@
--- arpiii v1.2.0
+-- arpiii v1.1.0
 pset_init("arpiii")
 
 local ins, rem, sort = table.insert, table.remove, table.sort
@@ -10,7 +10,7 @@ local latch, oct_shift, oct_dn_h, oct_up_h = 0, 0, false, false
 local midi_out, midi_in, midi_focus = 1, 0, 2
 local act_octs, act_octs_ord = {[-2]=false, [-1]=false, [0]=true, [1]=false, [2]=false}, {0}
 local playing, act_pg = false, 0
-local bpm, clk_src, div_idx, mod_mode, swing = 120, 1, 5, 1, 50
+local bpm, clk_src, send_midi_clk, div_idx, mod_mode, swing = 120, 1, true, 5, 1, 50
 local arp_speed, sys_t, ext_tick, taps = (60/bpm)/2, 0, 0, {}
 local play_ords = {"ORDR", "LINE", "LEAP", "STAG", "SHFT", "SPRL", "ANCH", "ACCM", "WALK", "RAND"}
 local cur_ord, mod_1, mod_2 = 1, false, false
@@ -65,6 +65,10 @@ end
 local function tx_midi(note, vel, ch, on)
   if ch == 0 then for c=1,16 do if on then midi_note_on(note,vel,c) else midi_note_off(note,vel,c) end end
   else if on then midi_note_on(note,vel,ch) else midi_note_off(note,vel,ch) end end
+end
+
+local function tx_midi_sys(d1)
+  if _G.midi_tx then _G.midi_tx(d1) end
 end
 
 local function kill_act()
@@ -162,7 +166,12 @@ end, 0.1); pls_m:start()
 local function arp_tick()
   gate_pos = (gate_pos % gate_len) + 1
   local p_note, p_vel, p_gate, p_ch
-  buf_idx = (buf_idx % 64) + 1
+  
+  if buf_lock and buf_idx == 0 then
+    buf_idx = buf_start
+  else
+    buf_idx = (buf_idx % 64) + 1
+  end
 
   if not buf_lock then
     p_ch = midi_out
@@ -252,18 +261,24 @@ m = metro.init(arp_tick, arp_speed)
 blk_m = metro.init(function() blk_st = not blk_st; redraw() end, (60/bpm)/2)
 g_off_m = metro.init(function() kill_act(); redraw() end, 0.1, 1)
 
+local midi_clk_m = metro.init(function()
+  if clk_src == 1 and send_midi_clk then tx_midi_sys(248) end
+end, (60/bpm)/24)
+midi_clk_m:start()
+
 local function upd_tempo()
   local mult = 4 / (2^(div_idx-1))
   if mod_mode == 2 then mult = mult * (2/3) elseif mod_mode == 3 then mult = mult * 1.5 end
   arp_speed = (60/bpm) * mult
   m.time = arp_speed * (((gate_pos==0 and 1 or gate_pos) % 2 == 1) and (swing/50) or ((100-swing)/50))
   blk_m.time = (60/bpm)/2
+  midi_clk_m.time = (60/bpm)/24
   if clk_src == 1 and playing then m:start() else m:stop() end
 end
 
 local function reset_defaults()
   kill_act(); clear_log_keys()
-  bpm, clk_src, div_idx, mod_mode, swing = 120, 1, 5, 1, 50
+  bpm, clk_src, send_midi_clk, div_idx, mod_mode, swing = 120, 1, true, 5, 1, 50
   cur_ord, mod_1, mod_2 = 1, false, false
   gate_len, glb_vel, glb_gate = 16, 96, 50
   for i=1,64 do gate_seq[i], gate_vel[i], gate_gate[i] = true, glb_vel, glb_gate end
@@ -291,7 +306,7 @@ local function soft_reset()
 end
 
 local function save_pr(n)
-  local p = {b=bpm, d=div_idx, s=swing, o=cur_ord, m1=mod_1, m2=mod_2, gl=gate_len, gs={}, gv={}, gg={}, ao={}, aoo={}, l=latch, po={}}
+  local p = {b=bpm, d=div_idx, s=swing, mc=send_midi_clk, o=cur_ord, m1=mod_1, m2=mod_2, gl=gate_len, gs={}, gv={}, gg={}, ao={}, aoo={}, l=latch, po={}}
   for i=1,64 do 
     p.gs[i] = gate_seq[i]
     if gate_vel[i] ~= glb_vel then p.gv[i] = gate_vel[i] end
@@ -319,6 +334,7 @@ local function load_pr(n)
   kill_act(); clear_log_keys()
   
   bpm, div_idx, swing, cur_ord, mod_1, mod_2, gate_len, latch = p.b, p.d, p.s, p.o, p.m1, p.m2, p.gl, p.l
+  send_midi_clk = p.mc == nil and true or p.mc
   for i=1,64 do 
     gate_seq[i] = p.gs[i]
     gate_vel[i] = p.gv[i] or glb_vel
@@ -350,7 +366,14 @@ local sys_m = metro.init(function()
     save_pr(p_h_n); p_svd = true; p_bl_n, p_bl_t = p_h_n, sys_t; redraw()
   end
   if play_h and not play_svd and (sys_t - play_h_t) >= 2.0 then
-    soft_reset(); play_svd = true; play_blink_t = sys_t; redraw()
+    soft_reset()
+    if clk_src == 1 and playing and send_midi_clk then
+      tx_midi_sys(252)
+      tx_midi_sys(250)
+    end
+    play_svd = true
+    play_blink_t = sys_t
+    redraw()
   end
   if p_bl_n and (sys_t - p_bl_t) >= 0.75 then p_bl_n = nil; redraw() end
   if play_blink_t > 0 and (sys_t - play_blink_t) >= 0.75 then play_blink_t = 0; redraw() end
@@ -397,7 +420,7 @@ function event_grid(x, y, z)
         p_h_n = nil; redraw()
       end
       if phys_keys[(x*100)+y] then
-        local note = note_map[y] and note_map[y][x]; phys_keys[(x*100)+y] = nil
+        local note = phys_keys[(x*100)+y]; phys_keys[(x*100)+y] = nil
         if latch == 0 then 
           log_keys[note]=nil; for i,v in ipairs(press_ord) do if v==note then rem(press_ord,i) break end end
           step = (cur_ord == 9) and find_root_step() or 1; rebuild_arp()
@@ -435,12 +458,30 @@ function event_grid(x, y, z)
           play_h_t = sys_t; play_svd = false
         else
           if not play_svd then
-            playing = not playing; if playing and clk_src==1 then m:start(); if cur_ord==9 then step=find_root_step() end else m:stop(); kill_act() end
+            playing = not playing
+            if playing then
+              if clk_src == 1 then
+                if send_midi_clk then tx_midi_sys(250) end
+                m:start()
+                if cur_ord==9 then step=find_root_step() end
+              end
+            else
+              if clk_src == 1 and send_midi_clk then tx_midi_sys(252) end
+              if clk_src == 1 then m:stop() end
+              kill_act()
+            end
           end
         end
         redraw()
       elseif z == 1 then
-        if x == 2 then gate_pos, buf_idx = 0, 0; step = (cur_ord == 9) and find_root_step() or 1; redraw()
+        if x == 2 then 
+          gate_pos, buf_idx = 0, 0
+          step = (cur_ord == 9) and find_root_step() or 1
+          if clk_src == 1 and playing and send_midi_clk then
+            tx_midi_sys(252)
+            tx_midi_sys(250)
+          end
+          redraw()
         elseif p_m[x] then chg_pg(act_pg == p_m[x] and 0 or p_m[x])
         elseif x == 16 then 
           if buf_lock and act_pg ~= 0 then 
@@ -465,7 +506,9 @@ function event_grid(x, y, z)
         ins(taps, sys_t)
         if #taps > 1 then local d = (sys_t - taps[1]) / (#taps - 1); if d > 0 then bpm = flr(clamp(60/d, 20, 300)); upd_tempo() end end
         if #taps > 4 then rem(taps, 1) end
-      elseif x == 3 or x == 4 then clk_src = (x==3) and 1 or 2; upd_tempo() end
+      elseif x == 3 or x == 4 then clk_src = (x==3) and 1 or 2; upd_tempo() 
+      elseif x == 16 and clk_src == 1 then send_midi_clk = not send_midi_clk
+      end
     elseif x == 13 and clk_src == 1 then
       local d = (y==4 and 1) or (y==5 and -1) or (y==7 and 10) or (y==8 and -10)
       if d then bpm = clamp(bpm+d, 20, 300); upd_tempo() end
@@ -541,8 +584,8 @@ function event_grid(x, y, z)
   
   if x == 2 and y == 8 and z == 1 then pr_mode = not pr_mode; redraw(); return end
   
-  if x == 1 and y == 7 then oct_dn_h = (z==1); if z==1 then oct_shift = oct_up_h and 0 or max(-4, oct_shift-1); redraw() end; return end
-  if x == 2 and y == 7 then oct_up_h = (z==1); if z==1 then oct_shift = oct_dn_h and 0 or min(4, oct_shift+1); redraw() end; return end
+  if x == 1 and y == 7 then oct_dn_h = (z==1); if z==1 then if get_phys_ct() > 0 and latch == 0 then latch = 1 end; oct_shift = oct_up_h and 0 or max(-4, oct_shift-1); redraw() end; return end
+  if x == 2 and y == 7 then oct_up_h = (z==1); if z==1 then if get_phys_ct() > 0 and latch == 0 then latch = 1 end; oct_shift = oct_dn_h and 0 or min(4, oct_shift+1); redraw() end; return end
 
   local bn = key_map[y] and key_map[y][x]
   if bn and z == 1 then
@@ -573,16 +616,20 @@ local function hw_redraw()
   
   if act_pg == 1 then
     grid_led(1, 2, blk_st and 15 or 4); grid_led(3, 2, clk_src == 1 and 15 or 4); grid_led(4, 2, clk_src == 2 and 15 or 4) 
-    if clk_src == 1 then draw_inc_b(13) end
+    if clk_src == 1 then 
+      draw_inc_b(13)
+      grid_led(16, 2, send_midi_clk and 15 or 1)
+    end
     draw_text((clk_src == 2) and "EXT" or bpm_strs[flr(bpm + 0.5)], 1, 4)
   elseif act_pg == 2 then
     for i=1,7 do grid_led(i, 2, div_idx == i and 15 or 4) end; for i=1,3 do grid_led(i+13, 2, mod_mode == i and 15 or 4) end
     draw_text(div_strs[div_idx][mod_mode], 1, 4)
   elseif act_pg == 3 then draw_inc_b(13); draw_text(swing_strs[swing], 1, 4)
   elseif act_pg == 4 then
+    local d_pos = gate_pos == 0 and 1 or gate_pos
     for i=1,64 do
       local gx, gy = (i-1)%16+1, flr((i-1)/16)+2
-      if i == gate_pos then grid_led(gx, gy, 15) elseif i == edit_step then grid_led(gx, gy, 10) 
+      if i == d_pos then grid_led(gx, gy, 15) elseif i == edit_step then grid_led(gx, gy, 10) 
       elseif i <= gate_len then grid_led(gx, gy, not gate_seq[i] and 0 or ((gate_vel[i]~=glb_vel or gate_gate[i]~=glb_gate) and 6 or 1))
       else grid_led(gx, gy, 1) end
     end
@@ -596,15 +643,17 @@ local function hw_redraw()
     grid_led(15, 2, mod_1 and 15 or 4); grid_led(16, 2, mod_2 and 15 or 4)
     draw_text(play_ords[cur_ord], 1, 4)
   else
+    local d_pos = gate_pos == 0 and 1 or gate_pos
+    local d_buf = buf_idx == 0 and buf_start or buf_idx
     for i=1,64 do
       local gx, gy = (i-1)%16+1, flr((i-1)/16)+2
       if buf_lock then
         local br, in_l = hist_buf[i].n and max(1, flr((hist_buf[i].v/127)*15)) or 0, false
         if buf_start <= buf_end then in_l = (i>=buf_start and i<=buf_end) else in_l = (i>=buf_start or i<=buf_end) end
-        grid_led(gx, gy, i==buf_idx and 15 or ((i==buf_start or i==buf_end) and pls_v or (in_l and (br>0 and br or 1) or 0)))
+        grid_led(gx, gy, i==d_buf and 15 or ((i==buf_start or i==buf_end) and pls_v or (in_l and (br>0 and br or 1) or 0)))
       else
         local br = gate_seq[i] and max(1, flr((gate_vel[i]/127)*15)) or 0
-        grid_led(gx, gy, i==gate_pos and 15 or (i<=gate_len and br or (gate_seq[i] and 1 or 0)))
+        grid_led(gx, gy, i==d_pos and 15 or (i<=gate_len and br or (gate_seq[i] and 1 or 0)))
       end
     end
     grid_led(1, 8, latch==1 and 10 or (latch==2 and 15 or 4))
