@@ -1,7 +1,7 @@
 # arpiii
 An arpeggiator and sequencer for Monome Grid using iii
 
-Current Version 1.2.0
+Current Version 1.3.0
 
 [![arpiii 1.0 demo](img/arpiii_1.0_thumbnail.jpg)](https://www.youtube.com/watch?v=BHH4k8Uw0lQ)
 
@@ -67,41 +67,44 @@ This button selects the internal clock and the BPM displays the current tempo.
 
 **[K] Increments**  
 The two sets of buttons next to the BPM display numbers are for increasing or decreasing the tempo.
+
+**[L] Send MIDI Clock**
+When this button is toggled, a 24ppqn clock is sent out to other devices as well as signals for start, stop, and reset.
 ![Clock Internal](img/arpiii_Clock-Internal.png)
 
 ## Clock - External
-**[L] External MIDI Source**  
+**[M] External MIDI Source**  
 This button sets the clock to look for an external MIDI signal. It responds to start, stop, and reset signals. EXT is now showing instead of the BPM display.
 
 If the clock is set back to internal after using an external, the internal clock will reflect the previously used external clock (approximate).
 ![Clock External](img/arpiii_Clock-External.png)
 
 ## Swing
-**[M] Swing**  
+**[N] Swing**  
 This button toggles the Swing page and shows the current global swing value in the text display.
 
-**[N] Increments**  
+**[O] Increments**  
 The two sets of buttons next to the number display are for increasing or decreasing the swing.
 
 Swing can be adjusted from 25% to 75% with 50% being no swing. Swing set under 50% will cause the swung notes to arrive early and swing set over 50% will cause the swung notes to arrive late.
 ![Swing](img/arpiii_Swing.png)
 
 ## Time Division
-**[O] Time Division**  
+**[P] Time Division**  
 This button shows the page for setting the time division the arpeggiator runs at relative to the main tempo. The current setting shown on the display text.
 
-**[P] Division Options**  
+**[Q] Division Options**  
 The buttons allow for the time to be divided in musical division from 1 to 1/64 of a note.
 
-**[Q] Division Modifiers**  
+**[R] Division Modifiers**  
 The modifier buttons allow the division to be switched between straight time, triplets, and dotted notes.
 ![Time Division](img/arpiii_Time-Division.png)
 
 ## Order - Options
-**[R] Order**  
+**[S] Order**  
 This button toggles the order page where you can choose the playback order for the arpeggiator.
 
-**[S] Order Options**  
+**[T] Order Options**  
 These options indicate the current arpeggio pattern. There are ten options giving a wide variety of classic, geometric, and generative sequences. The options are:  
 Order - ORDR  
 Linear - LINE  
@@ -116,7 +119,7 @@ Random - RAND
 
 There is a full description of each order on the next page.
 
-**[T] Modifiers**  
+**[U] Modifiers**  
 These two buttons represent two modifier options for each playback order. For most of the orders, the first modifier reverses the playback sequence, and the second modifier changes the playback into a pendulum motion without the ends repeating.
 ![Order View](img/arpiii_Order-View.png)
 
@@ -135,7 +138,7 @@ These two buttons represent two modifier options for each playback order. For mo
 | Random | RAND | Random plays a completely random sequence based on the notes played. The notes might repeat sequentially. | Sequential Repeats are Avoided | Octave Clustering - Active octaves are played in the order they are pressed with clusters of random notes moving between the octaves. |
 
 ## Octave
-**[U] Octave**  
+**[V] Octave**  
 The octave buttons adjust the range of the notes in the arpeggio sequence. The center octave button is the notes input on the keyboard.
 
 The octave buttons are independent of each other, so they can be used to create gaps in octave ranges, giving a different level of control.
@@ -144,55 +147,55 @@ At least one octave button must be used at any one time, so if no octaves are se
 ![Octave](img/arpiii_Octave.png)
 
 ## Velocity & Gate
-**[V] Velocity & Gate**  
+**[W] Velocity & Gate**  
 This button toggles the page to input velocity and gate values for each step of the gate sequencer.
 
-**[W] Current Step**  
+**[X] Current Step**  
 Press anywhere on the grid to activate a step to edit. Each step can have an independent velocity value and gate length.
 
-**[X] Velocity**  
+**[Y] Velocity**  
 Velocity values for a step can range between 8 and 127.
 
-**[Y] Gate Length**  
+**[Z] Gate Length**  
 Gate length values for a step can range between 6 and 100. Setting gate length to 100 will introduce ties when repeated notes are played.
 
 _Shortcut:_  
-Holding **[V]** and pressing a value on **[X]** or **[Y]** will set the value for all the steps in the gate sequencer simultaneously. This will also set the global velocity level and act as a offset point for edited velocities and gates when saving presets.
+Holding **[W]** and pressing a value on **[Y]** or **[Z]** will set the value for all the steps in the gate sequencer simultaneously. This will also set the global velocity level and act as a offset point for edited velocities and gates when saving presets.
 ![Veloctiy Gate](img/arpiii_Velocity-Gate.png)
 
 ## MIDI Channel
-**[Z] MIDI**  
+**[AA] MIDI**  
 This button toggles the MIDI page and shows the settings for each track. Each track can play a different MIDI note and be on a different MIDI channel.
 
-**[AA] MIDI In Channel**  
+**[BB] MIDI In Channel**  
 This button shows the current MIDI in channel. By default, it is set to ALL. This is channel that receives clock, transport, and note input from an external device.
 
-**[BB] MIDI Out Channel**  
+**[CC] MIDI Out Channel**  
 This button shows the current MIDI out channel. By default, it is set to 1.
 
-**[CC] Increments**  
+**[DD] Increments**  
 The two sets of buttons next to the number display are for increasing or decreasing the MIDI channel.
 
 MIDI channels can range from OFF, ALL, or 1–16.
 ![MIDI](img/arpiii_MIDI.png)
 
 ## Lock
-**[DD] Lock**  
+**[EE] Lock**  
 This button engages the lock feature that repeats the last 64 notes and gates played by the sequencer. While the sequencer is running, the 64-step buffer is always recording the notes, gates, and velocities, and MIDI channel. 
 
-**[EE] Running Buffer**  
+**[FF] Running Buffer**  
 The current buffer is displayed using the grid of 64 steps and show the rests and velocities for each step. The start and end points of the buffer are represented by a pulsing light.
 
 To set the start point, press a button on the grid. To set the end point, press a second button while holding down the first. The range of the buffer can be wrapped around the start by setting the end point before the start point.
 ![Lock](img/arpiii_Lock.png)
 
 ## Presets
-**[FF] Presets**  
+**[GG] Presets**  
 This button toggles the preset bank that replaces the keyboard to save and instantly load presets.
 
 Each preset stores the track’s held notes, gates, velocities, internal BPM, clock division, swing, playback order, and octaves.
 
-**[GG] Preset Select**  
+**[HH] Preset Select**  
 Each key can be used to save a preset, making a total of 24 presets. Keys that are dim have not associated preset and the brightly lit key indicates the currently active preset.
 
 To save a preset, hold the key button for 2 seconds until the slot blinks. Load a preset by tapping the desired button.
