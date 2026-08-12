@@ -168,7 +168,7 @@ Holding **[W]** and pressing a value on **[Y]** or **[Z]** will set the value fo
 This button toggles the MIDI page and shows the settings for each track. Each track can play a different MIDI note and be on a different MIDI channel.
 
 **[BB] MIDI In Channel**  
-This button shows the current MIDI in channel. By default, it is set to ALL. This is channel that receives clock, transport, and note input from an external device.
+This button shows the current MIDI in channel. By default, it is set to ALL. This is the channel that receives clock, transport, and note input from an external device.
 
 **[CC] MIDI Out Channel**  
 This button shows the current MIDI out channel. By default, it is set to 1.
