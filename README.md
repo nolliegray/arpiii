@@ -117,8 +117,6 @@ Accumulate - ACCM
 Drunken Walk - WALK  
 Random - RAND  
 
-There is a full description of each order on the next page.
-
 **[U] Modifiers**  
 These two buttons represent two modifier options for each playback order. For most of the orders, the first modifier reverses the playback sequence, and the second modifier changes the playback into a pendulum motion without the ends repeating.
 ![Order View](img/arpiii_Order-View.png)
