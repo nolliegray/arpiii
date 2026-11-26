@@ -1,4 +1,4 @@
--- arpiii v1.3.0
+-- arpiii v1.3.1
 pset_init("arpiii")
 
 local ins, rem, sort = table.insert, table.remove, table.sort
